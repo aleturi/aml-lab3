@@ -1,0 +1,24 @@
+import torch
+
+
+def validate(model, val_loader, criterion, device):
+    model.eval()
+    val_loss = 0.0
+    correct, total = 0, 0
+
+    with torch.no_grad():
+        for inputs, targets in val_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+
+            val_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
+    val_loss = val_loss / len(val_loader)
+    val_accuracy = 100.0 * correct / total
+    print(f"Validation Loss: {val_loss:.6f} Acc: {val_accuracy:.2f}%")
+    return val_accuracy

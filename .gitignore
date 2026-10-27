@@ -76,6 +76,10 @@ docs/_build/
 target/
 
 # Jupyter Notebook
+data/*
+!data/.gitkeep
+checkpoints/*
+!checkpoints/.gitkeep
 .ipynb_checkpoints
 
 # IPython
