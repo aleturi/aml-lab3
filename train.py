@@ -2,6 +2,7 @@ import os
 
 import torch
 import torchvision.transforms as T
+import wandb
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
@@ -75,18 +76,55 @@ def train(epoch, model, train_loader, criterion, optimizer):
     train_loss = running_loss / len(train_loader)
     train_accuracy = 100.0 * correct / total
     print(f"Train Epoch: {epoch} Loss: {train_loss:.6f} Acc: {train_accuracy:.2f}%")
+    return train_loss, train_accuracy
 
 
 if __name__ == "__main__":
+    wandb.init(
+        project="aml-lab3-tiny-imagenet",
+        name="custom-net-sgd",
+        config={
+            "epochs": 10,
+            "batch_size": 32,
+            "learning_rate": 0.001,
+            "momentum": 0.9,
+            "image_size": 224,
+            "optimizer": "SGD",
+            "model": "CustomNet",
+        },
+    )
+
     model = CustomNet().to(device)
+    wandb.watch(model, log="all", log_freq=100)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
     best_acc = 0
     num_epochs = 10
     for epoch in range(1, num_epochs + 1):
-        train(epoch, model, train_loader, criterion, optimizer)
-        val_accuracy = validate(model, val_loader, criterion, device)
+        train_loss, train_accuracy = train(
+            epoch,
+            model,
+            train_loader,
+            criterion,
+            optimizer,
+        )
+        val_loss, val_accuracy = validate(
+            model,
+            val_loader,
+            criterion,
+            device,
+        )
+
+        wandb.log(
+            {
+                "epoch": epoch,
+                "train/loss": train_loss,
+                "train/accuracy": train_accuracy,
+                "validation/loss": val_loss,
+                "validation/accuracy": val_accuracy,
+            }
+        )
 
         if val_accuracy > best_acc:
             best_acc = val_accuracy
@@ -104,3 +142,4 @@ if __name__ == "__main__":
             )
 
     print(f"Best validation accuracy: {best_acc:.2f}%")
+    wandb.finish()
